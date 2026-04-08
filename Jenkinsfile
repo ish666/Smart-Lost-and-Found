@@ -10,7 +10,11 @@ pipeline {
 
         stage('Run Server (Test Mode)') {
             steps {
-                sh 'timeout 10 python3 server.py || true'
+                sh '''
+                python3 server.py &
+                sleep 10
+                pkill -f server.py || true
+                '''
             }
         }
 
