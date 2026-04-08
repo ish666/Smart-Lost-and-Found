@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Smart Lost & Found</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#0c0e14;--surface:#13161f;--surface2:#1a1e2a;--border:#252a38;
+  --accent:#f59e0b;--accent2:#ef4444;--green:#34d399;--blue:#60a5fa;--red:#f87171;
+  --text:#e2e8f0;--muted:#64748b;--r:10px;
+  --head:'Syne',sans-serif;--body:'DM Sans',sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--body);font-size:15px;min-height:100vh}
+
+/* NAV */
+nav{background:var(--surface);border-bottom:1px solid var(--border);padding:0 1.5rem;height:58px;
+    display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.logo{font-family:var(--head);font-weight:800;font-size:1.15rem;color:var(--accent);letter-spacing:-.3px}
+.logo span{color:var(--text)}
+.nav-links{display:flex;gap:.2rem;align-items:center;flex-wrap:wrap}
+nav button{background:none;border:none;color:var(--muted);font-family:var(--body);font-size:.85rem;
+           padding:6px 13px;border-radius:7px;cursor:pointer;transition:all .15s}
+nav button:hover,nav button.active{color:var(--text);background:var(--surface2)}
+nav button.cta{background:var(--accent);color:#000;font-weight:600;margin-left:.4rem}
+nav button.cta:hover{opacity:.88}
+
+/* VIEWS */
+.view{display:none;max-width:980px;margin:0 auto;padding:2rem 1.2rem;animation:fi .2s ease}
+.view.active{display:block}
+@keyframes fi{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+
+/* TYPE */
+h1{font-family:var(--head);font-size:1.9rem;font-weight:800;margin-bottom:.3rem}
+h2{font-family:var(--head);font-size:1.2rem;font-weight:700;margin-bottom:.9rem}
+h3{font-family:var(--head);font-size:.95rem;font-weight:700;margin-bottom:.4rem}
+.sub{color:var(--muted);margin-bottom:1.8rem;font-size:.9rem}
+
+/* CARD */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:1.4rem;margin-bottom:.9rem}
+.card:hover{border-color:#333a50}
+
+/* GRID */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:.9rem}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:.9rem;margin-bottom:2rem}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);
+           padding:1.1rem 1.3rem;text-align:center}
+.stat-card .num{font-family:var(--head);font-size:2rem;font-weight:800;color:var(--accent)}
+.stat-card .lbl{color:var(--muted);font-size:.75rem;margin-top:2px;text-transform:uppercase;letter-spacing:.4px}
+
+/* FORM */
+.fg{margin-bottom:1rem}
+label{display:block;font-size:.75rem;font-weight:500;color:var(--muted);margin-bottom:.3rem;
+      text-transform:uppercase;letter-spacing:.4px}
+input,textarea,select{width:100%;background:var(--surface2);border:1px solid var(--border);
+  border-radius:7px;color:var(--text);font-family:var(--body);font-size:.875rem;
+  padding:9px 11px;outline:none;transition:border-color .15s}
+input:focus,textarea:focus,select:focus{border-color:var(--accent)}
+textarea{resize:vertical;min-height:85px}
+select option{background:var(--surface2)}
+.row{display:flex;gap:.75rem;flex-wrap:wrap}
+.row .fg{flex:1;min-width:130px}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:5px;padding:8px 18px;border-radius:7px;
+     border:none;font-family:var(--body);font-size:.85rem;font-weight:500;cursor:pointer;transition:all .15s}
+.btn-p{background:var(--accent);color:#000;font-weight:600}.btn-p:hover{opacity:.87}
+.btn-s{background:var(--surface2);color:var(--text);border:1px solid var(--border)}
+.btn-s:hover{border-color:var(--accent);color:var(--accent)}
+.btn-sm{padding:5px 11px;font-size:.78rem}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.full{width:100%}
+
+/* BADGE */
+.badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:.7rem;font-weight:600;
+       text-transform:uppercase;letter-spacing:.4px}
+.b-active{background:#1a3a2a;color:var(--green)}
+.b-approved{background:#1e3a5f;color:var(--blue)}
+.b-returned,.b-closed_bg{background:#3a2a10;color:var(--accent)}
+.b-rejected,.b-closed{background:#2a1a1a;color:var(--red)}
+.b-pending{background:#2a2a1a;color:#facc15}
+.b-in_progress{background:#1a2a3a;color:var(--blue)}
+.b-resolved{background:#1a3a2a;color:var(--green)}
+.b-cat{background:#1a2a1a;color:#86efac}
+
+/* ALERT */
+.alert{padding:.7rem 1rem;border-radius:7px;font-size:.85rem;margin-bottom:.9rem;border-left:3px solid}
+.a-err{background:#2a1a1a;border-color:var(--red);color:#fca5a5}
+.a-ok{background:#1a2a20;border-color:var(--green);color:#6ee7b7}
+.a-info{background:#1a2035;border-color:var(--blue);color:#93c5fd}
+
+/* ITEM CARD */
+.ic{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);
+    padding:1.1rem 1.3rem;transition:border-color .15s}
+.ic:hover{border-color:var(--accent)}
+.ic-meta{color:var(--muted);font-size:.78rem;margin:.2rem 0 .4rem}
+.ic-desc{font-size:.85rem;color:#94a3b8;margin-bottom:.7rem}
+.ic-actions{display:flex;gap:.4rem;flex-wrap:wrap}
+
+/* TABS */
+.tabs{display:flex;gap:.2rem;margin-bottom:1.4rem;border-bottom:1px solid var(--border)}
+.tab{background:none;border:none;color:var(--muted);font-family:var(--body);font-size:.85rem;
+     padding:8px 15px;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s}
+.tab:hover{color:var(--text)}.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+
+/* HERO */
+.hero{text-align:center;padding:3rem 1rem 2rem}
+.hero h1{font-size:2.7rem;line-height:1.1}
+.hero h1 em{font-style:normal;color:var(--accent)}
+.hero p{color:var(--muted);max-width:440px;margin:1rem auto 2rem;line-height:1.7}
+.hero-btns{display:flex;gap:.9rem;justify-content:center;flex-wrap:wrap}
+
+/* SEARCH */
+.sbar{display:flex;gap:.5rem;margin-bottom:1.4rem;flex-wrap:wrap}
+.sbar input{flex:1;min-width:180px}
+.sbar select{width:160px}
+
+/* LOADING */
+.loading{text-align:center;color:var(--muted);padding:2rem}
+.sp{display:inline-block;width:18px;height:18px;border:2px solid var(--border);
+    border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite;
+    margin-right:7px;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
+.empty{text-align:center;color:var(--muted);padding:3rem;font-size:.9rem}
+
+/* AUTH */
+.auth-wrap{max-width:400px;margin:3rem auto}
+.auth-tog{text-align:center;margin-top:.9rem;font-size:.85rem;color:var(--muted)}
+.auth-tog a{color:var(--accent);cursor:pointer;text-decoration:underline}
+
+/* MATCH */
+.mc{border:1px solid var(--border);border-radius:var(--r);padding:1rem 1.2rem;
+    background:var(--surface2);margin-bottom:.7rem}
+.ms{font-family:var(--head);font-size:1.4rem;font-weight:800;color:var(--accent)}
+.mr li{font-size:.78rem;color:var(--muted);margin-left:1rem;margin-top:.2rem}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="logo">🎒 Lost<span>&Found</span></div>
+  <div class="nav-links" id="navLinks"></div>
+</nav>
+
+<!-- HOME -->
+<div class="view active" id="view-home">
+  <div class="hero">
+    <h1>College<br/><em>Lost &amp; Found</em></h1>
+    <p>Report lost items, browse found items, and let our smart matching system bring them back.</p>
+    <div class="hero-btns">
+      <button class="btn btn-p" onclick="goReport('lost')">📋 Report Lost</button>
+      <button class="btn btn-s" onclick="goReport('found')">🔍 Report Found</button>
+      <button class="btn btn-s" onclick="showView('browse')">Browse All Items</button>
+    </div>
+  </div>
+  <div class="stat-grid" id="homeStats">
+    <div class="stat-card"><div class="num" id="hs1">—</div><div class="lbl">Lost Reports</div></div>
+    <div class="stat-card"><div class="num" id="hs2">—</div><div class="lbl">Found Reports</div></div>
+    <div class="stat-card"><div class="num" id="hs3">—</div><div class="lbl">Cases Resolved</div></div>
+    <div class="stat-card"><div class="num" id="hs4">—</div><div class="lbl">Open Queries</div></div>
+  </div>
+</div>
+
+<!-- AUTH -->
+<div class="view" id="view-auth">
+  <div class="auth-wrap">
+    <div id="formLogin">
+      <h2>Sign In</h2><p class="sub">Welcome back</p>
+      <div id="aLogin"></div>
+      <div class="card">
+        <div class="fg"><label>Email</label><input id="lEmail" type="email" placeholder="you@college.edu"/></div>
+        <div class="fg"><label>Password</label><input id="lPass" type="password" placeholder="••••••••"/></div>
+        <button class="btn btn-p full" onclick="doLogin()">Sign In</button>
+      </div>
+      <div class="auth-tog">No account? <a onclick="toggleAuth()">Register</a></div>
+    </div>
+    <div id="formReg" style="display:none">
+      <h2>Create Account</h2><p class="sub">Join the community</p>
+      <div id="aReg"></div>
+      <div class="card">
+        <div class="fg"><label>Name</label><input id="rName" placeholder="Full name"/></div>
+        <div class="fg"><label>Email</label><input id="rEmail" type="email" placeholder="you@college.edu"/></div>
+        <div class="fg"><label>Password</label><input id="rPass" type="password" placeholder="Min 6 chars"/></div>
+        <button class="btn btn-p full" onclick="doRegister()">Create Account</button>
+      </div>
+      <div class="auth-tog">Have account? <a onclick="toggleAuth()">Login</a></div>
+    </div>
+  </div>
+</div>
+
+<!-- BROWSE -->
+<div class="view" id="view-browse">
+  <h1>Browse Items</h1><p class="sub">Search all lost and found reports</p>
+  <div class="sbar">
+    <input id="skw" placeholder="Search keyword..." onkeydown="if(event.key==='Enter')doSearch()"/>
+    <select id="scat">
+      <option value="">All Categories</option>
+      <option>Electronics</option><option>Clothing</option><option>Accessories</option>
+      <option>Books</option><option>Keys</option><option>Sports</option><option>Other</option>
+    </select>
+    <select id="stype" style="width:140px">
+      <option value="">Lost &amp; Found</option>
+      <option value="lost">Lost Only</option>
+      <option value="found">Found Only</option>
+    </select>
+    <button class="btn btn-p" onclick="doSearch()">Search</button>
+  </div>
+  <div class="tabs">
+    <button class="tab active" onclick="bTab('lost',this)">🔴 Lost Items</button>
+    <button class="tab" onclick="bTab('found',this)">🟢 Found Items</button>
+  </div>
+  <div id="browseOut"><div class="loading"><span class="sp"></span>Loading…</div></div>
+</div>
+
+<!-- REPORT -->
+<div class="view" id="view-report">
+  <h1 id="rpTitle">Report Item</h1><p class="sub" id="rpSub"></p>
+  <div id="rpAlert"></div>
+  <div class="card">
+    <div class="fg"><label>Item Name *</label><input id="rpN" placeholder="e.g. Black leather wallet"/></div>
+    <div class="fg"><label>Description</label>
+      <textarea id="rpD" placeholder="Color, brand, distinguishing features…"></textarea></div>
+    <div class="row">
+      <div class="fg"><label>Category</label>
+        <select id="rpC"><option value="">Select…</option>
+          <option>Electronics</option><option>Clothing</option><option>Accessories</option>
+          <option>Books</option><option>Keys</option><option>Sports</option><option>Other</option>
+        </select></div>
+      <div class="fg"><label>Location</label><input id="rpL" placeholder="e.g. Library 2nd floor"/></div>
+    </div>
+    <div class="fg"><label>Date &amp; Time</label><input type="datetime-local" id="rpDt"/></div>
+    <div class="fg"><label>Image (optional)</label><input type="file" id="rpImg" accept="image/*"/></div>
+    <button class="btn btn-p" onclick="submitReport()">Submit Report</button>
+  </div>
+</div>
+
+<!-- MY ITEMS -->
+<div class="view" id="view-mine">
+  <h1>My Items</h1><p class="sub">Your reports and queries</p>
+  <div class="tabs">
+    <button class="tab active" onclick="mTab('lost',this)">Lost Reports</button>
+    <button class="tab" onclick="mTab('found',this)">Found Reports</button>
+    <button class="tab" onclick="mTab('queries',this)">My Queries</button>
+  </div>
+  <div id="mineOut"><div class="loading"><span class="sp"></span>Loading…</div></div>
+</div>
+
+<!-- MATCH -->
+<div class="view" id="view-match">
+  <h1>Smart Matches</h1><p class="sub">Items that may match your lost report</p>
+  <div id="matchOut"><div class="loading"><span class="sp"></span>Running algorithm…</div></div>
+</div>
+
+<!-- ADMIN -->
+<div class="view" id="view-admin">
+  <h1>Admin Dashboard</h1><p class="sub">Manage all reports, queries, and users</p>
+  <div class="stat-grid" id="admStats"></div>
+  <div class="tabs">
+    <button class="tab active" onclick="aTab('lost',this)">Lost Items</button>
+    <button class="tab" onclick="aTab('found',this)">Found Items</button>
+    <button class="tab" onclick="aTab('queries',this)">Queries</button>
+    <button class="tab" onclick="aTab('users',this)">Users</button>
+  </div>
+  <div id="admOut"><div class="loading"><span class="sp"></span>Loading…</div></div>
+</div>
+
+<script>
+const API = '';   // same-origin
+let token = localStorage.getItem('lf_token') || '';
+let me    = JSON.parse(localStorage.getItem('lf_me') || 'null');
+let bData = {lost:[],found:[]};
+let bCurTab = 'lost';
+let rpType  = 'lost';
+
+// ── utils ────────────────────────────────────────────────────────────────────
+const hdrs = (form=false) => {
+  const h = {};
+  if (token) h['Authorization'] = `Bearer ${token}`;
+  if (!form) h['Content-Type'] = 'application/json';
+  return h;
+};
+
+async function api(method, path, body=null, form=false){
+  const opts = {method, headers: hdrs(form)};
+  if (body) opts.body = form ? body : JSON.stringify(body);
+  const r = await fetch(API + path, opts);
+  const d = await r.json().catch(()=>({}));
+  if (!r.ok) throw new Error(d.detail || 'Request failed');
+  return d;
+}
+
+function showView(name){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.querySelectorAll('nav button[data-v]').forEach(b=>b.classList.remove('active'));
+  document.getElementById('view-'+name).classList.add('active');
+  const nb = document.querySelector(`nav button[data-v="${name}"]`);
+  if(nb) nb.classList.add('active');
+  if(name==='browse') loadBrowse();
+  if(name==='mine')   loadMyLost();
+  if(name==='admin')  loadAdmStats();
+  if(name==='home')   loadHomeStats();
+}
+
+function flash(elId, msg, type='err'){
+  const el = document.getElementById(elId);
+  if(!el) return;
+  el.innerHTML = `<div class="alert a-${type}">${msg}</div>`;
+  setTimeout(()=>{if(el) el.innerHTML='';}, 4000);
+}
+
+function badge(status){
+  const map = {active:'b-active',approved:'b-approved',rejected:'b-rejected',
+    returned:'b-returned',closed:'b-closed',pending:'b-pending',
+    in_progress:'b-in_progress',resolved:'b-resolved'};
+  const cls = map[status] || 'b-active';
+  return `<span class="badge ${cls}">${status.replace('_',' ')}</span>`;
+}
+
+function fdate(d){ return d ? new Date(d).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}) : '—'; }
+
+// ── nav ──────────────────────────────────────────────────────────────────────
+function buildNav(){
+  const el = document.getElementById('navLinks');
+  if(me){
+    el.innerHTML = `
+      <button data-v="home"   onclick="showView('home')">Home</button>
+      <button data-v="browse" onclick="showView('browse')">Browse</button>
+      <button data-v="report" onclick="goReport('lost')">Report</button>
+      <button data-v="mine"   onclick="showView('mine')">My Items</button>
+      ${me.role==='admin'?`<button data-v="admin" onclick="showView('admin')">⚙ Admin</button>`:''}
+      <button class="cta" onclick="doLogout()">Logout (${me.name.split(' ')[0]})</button>`;
+  } else {
+    el.innerHTML = `
+      <button data-v="home"   onclick="showView('home')">Home</button>
+      <button data-v="browse" onclick="showView('browse')">Browse</button>
+      <button class="cta" data-v="auth" onclick="showView('auth')">Login</button>`;
+  }
+}
+
+// ── auth ─────────────────────────────────────────────────────────────────────
+function toggleAuth(){
+  const a=document.getElementById('formLogin'), b=document.getElementById('formReg');
+  a.style.display=a.style.display==='none'?'':'none';
+  b.style.display=b.style.display==='none'?'':'none';
+}
+
+async function doLogin(){
+  try{
+    const d = await api('POST','/login',{email:document.getElementById('lEmail').value, password:document.getElementById('lPass').value});
+    token=d.access_token; me=d.user;
+    localStorage.setItem('lf_token',token); localStorage.setItem('lf_me',JSON.stringify(me));
+    buildNav(); showView('home');
+  }catch(e){flash('aLogin',e.message);}
+}
+
+async function doRegister(){
+  try{
+    await api('POST','/register',{name:document.getElementById('rName').value,
+      email:document.getElementById('rEmail').value, password:document.getElementById('rPass').value});
+    flash('aReg','Account created! Please login.','ok');
+    setTimeout(toggleAuth,1500);
+  }catch(e){flash('aReg',e.message);}
+}
+
+function doLogout(){
+  token=''; me=null;
+  localStorage.removeItem('lf_token'); localStorage.removeItem('lf_me');
+  buildNav(); showView('home');
+}
+
+// ── home stats ───────────────────────────────────────────────────────────────
+async function loadHomeStats(){
+  if(!token) return;
+  try{
+    const d = await api('GET','/admin/analytics');
+    document.getElementById('hs1').textContent=d.total_lost;
+    document.getElementById('hs2').textContent=d.total_found;
+    document.getElementById('hs3').textContent=d.resolved_cases;
+    document.getElementById('hs4').textContent=d.pending_queries;
+  }catch{}
+}
+
+// ── browse ───────────────────────────────────────────────────────────────────
+async function loadBrowse(){
+  const el=document.getElementById('browseOut');
+  el.innerHTML='<div class="loading"><span class="sp"></span>Loading…</div>';
+  try{
+    const d = await api('GET','/search');
+    bData=d; renderBrowse(bCurTab);
+  }catch(e){el.innerHTML=`<div class="alert a-err">${e.message}</div>`;}
+}
+
+function bTab(tab,btn){
+  bCurTab=tab;
+  document.querySelectorAll('#view-browse .tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active'); renderBrowse(tab);
+}
+
+function renderBrowse(tab){
+  const items=bData[tab]||[];
+  const el=document.getElementById('browseOut');
+  if(!items.length){el.innerHTML='<div class="empty">No items found.</div>';return;}
+  el.innerHTML=`<div class="grid">${items.map(i=>itemCard(i,tab)).join('')}</div>`;
+}
+
+async function doSearch(){
+  const kw=document.getElementById('skw').value;
+  const cat=document.getElementById('scat').value;
+  const tp=document.getElementById('stype').value;
+  const p=new URLSearchParams();
+  if(kw) p.set('keyword',kw); if(cat) p.set('category',cat); if(tp) p.set('item_type',tp);
+  const el=document.getElementById('browseOut');
+  el.innerHTML='<div class="loading"><span class="sp"></span>Searching…</div>';
+  try{
+    const d=await api('GET',`/search?${p}`);
+    bData=d; renderBrowse(bCurTab);
+  }catch(e){el.innerHTML=`<div class="alert a-err">${e.message}</div>`;}
+}
+
+function itemCard(item, type){
+  const dt = fdate(type==='lost'?item.date_lost:item.date_found);
+  const matchBtn = type==='lost'&&token
+    ? `<button class="btn btn-s btn-sm" onclick="loadMatches(${item.id})">🔗 Matches</button>` : '';
+  const qBtn = type==='lost'&&token&&me?.role!=='admin'
+    ? `<button class="btn btn-s btn-sm" onclick="openQuery(${item.id})">❓ Query</button>` : '';
+  return `<div class="ic">
+    <h3>${escH(item.name)}</h3>
+    <div class="ic-meta">📍 ${escH(item.location||'Unknown')} &nbsp;·&nbsp; 📅 ${dt} &nbsp;·&nbsp; ${badge(item.status)}</div>
+    ${item.category?`<span class="badge b-cat" style="margin-bottom:.4rem;display:inline-block">${escH(item.category)}</span>`:''}
+    <div class="ic-desc">${escH(item.description||'No description provided.')}</div>
+    <div class="ic-actions">${matchBtn}${qBtn}</div>
+  </div>`;
+}
+
+// ── report ───────────────────────────────────────────────────────────────────
+function goReport(type){
+  if(!token){showView('auth');return;}
+  rpType=type;
+  document.getElementById('rpTitle').textContent=type==='lost'?'Report Lost Item':'Report Found Item';
+  document.getElementById('rpSub').textContent=type==='lost'
+    ?'Fill in details about the item you lost.'
+    :'Fill in details about the item you found.';
+  showView('report');
+}
+
+async function submitReport(){
+  if(!token){showView('auth');return;}
+  const name=document.getElementById('rpN').value.trim();
+  if(!name){flash('rpAlert','Item name is required.');return;}
+  const fd=new FormData();
+  fd.append('name',name);
+  fd.append('description',document.getElementById('rpD').value);
+  fd.append('category',document.getElementById('rpC').value);
+  fd.append('location',document.getElementById('rpL').value);
+  const dt=document.getElementById('rpDt').value;
+  if(dt) fd.append(rpType==='lost'?'date_lost':'date_found', dt);
+  const img=document.getElementById('rpImg').files[0];
+  if(img) fd.append('image',img);
+  try{
+    await api('POST', rpType==='lost'?'/report-lost':'/report-found', fd, true);
+    flash('rpAlert','✅ Report submitted successfully!','ok');
+    ['rpN','rpD','rpL'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('rpC').value='';
+    document.getElementById('rpDt').value='';
+    document.getElementById('rpImg').value='';
+  }catch(e){flash('rpAlert',e.message);}
+}
+
+// ── my items ─────────────────────────────────────────────────────────────────
+function mTab(tab,btn){
+  document.querySelectorAll('#view-mine .tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  if(tab==='lost') loadMyLost();
+  else if(tab==='found') loadMyFound();
+  else loadMyQueries();
+}
+
+async function loadMyLost(){
+  const el=document.getElementById('mineOut');
+  el.innerHTML='<div class="loading"><span class="sp"></span>Loading…</div>';
+  try{
+    const items=await api('GET','/items/lost');
+    const mine=items.filter(i=>i.user_id===me?.id);
+    if(!mine.length){el.innerHTML='<div class="empty">No lost reports yet.</div>';return;}
+    el.innerHTML=`<div class="grid">${mine.map(i=>itemCard(i,'lost')).join('')}</div>`;
+  }catch(e){el.innerHTML=`<div class="alert a-err">${e.message}</div>`;}
+}
+
+async function loadMyFound(){
+  const el=document.getElementById('mineOut');
+  el.innerHTML='<div class="loading"><span class="sp"></span>Loading…</div>';
+  try{
+    const items=await api('GET','/items/found');
+    const mine=items.filter(i=>i.user_id===me?.id);
+    if(!mine.length){el.innerHTML='<div class="empty">No found reports yet.</div>';return;}
+    el.innerHTML=`<div class="grid">${mine.map(i=>itemCard(i,'found')).join('')}</div>`;
+  }catch(e){el.innerHTML=`<div class="alert a-err">${e.message}</div>`;}
+}
+
+async function loadMyQueries(){
+  const el=document.getElementById('mineOut');
+  el.innerHTML='<div class="loading"><span class="sp"></span>Loading…</div>';
+  try{
+    const qs=await api('GET','/queries');
+    if(!qs.length){el.innerHTML='<div class="empty">No queries yet.</div>';return;}
+    el.innerHTML=qs.map(q=>`<div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">
+        <h3>Query #${q.id} — Item #${q.item_id}</h3>${badge(q.status)}
+      </div>
+      <p style="font-size:.875rem;margin-bottom:.5rem"><strong>Your message:</strong> ${escH(q.message)}</p>
+      ${q.admin_response?`<div class="alert a-info" style="margin:0"><strong>Admin:</strong> ${escH(q.admin_response)}</div>`:''}
+      <div style="margin-top:.5rem;font-size:.78rem;color:var(--muted)">${fdate(q.created_at)}</div>
+    </div>`).join('');
+  }catch(e){el.innerHTML=`<div class="alert a-err">${e.message}</div>`;}
+}
+
+// ── query ────────────────────────────────────────────────────────────────────
+function openQuery(itemId){
+  const msg=prompt(`Raise a query for Item #${itemId}\nDescribe your query:`);
+  if(!msg) return;
+  api('POST','/query',{item_id:itemId,message:msg})
+    .then(()=>alert('✅ Query submitted! Track it in My Items → My Queries.'))
+    .catch(e=>alert('Error: '+e.message));
+}
+
+// ── smart match ──────────────────────────────────────────────────────────────
+async function loadMatches(lostId){
+  showView('match');
+  const el=document.getElementById('matchOut');
+  el.innerHTML='<div class="loading"><span class="sp"></span>Running match algorithm…</div>';
+  try{
+    const d=await api('GET',`/match/${lostId}`);
+    if(!d.matches.length){
+      el.innerHTML='<div class="empty">No matches found yet. Check back as more items are reported.</div>';
+      return;
+    }
+    el.innerHTML=`
+      <div class="card" style="margin-bottom:1.4rem">
+        <h3>Lost Item: ${escH(d.lost_item.name)}</h3>
+        <div class="ic-meta">📍 ${escH(d.lost_item.location||'—')} · ${escH(d.lost_item.category||'—')}</div>
+        <div class="ic-desc">${escH(d.lost_item.description||'—')}</div>
+      </div>
+      <h2>Potential Matches (${d.matches.length})</h2>
+      ${d.matches.map(m=>`<div class="mc">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div>
+            <h3>${escH(m.name)}</h3>
+            <div class="ic-meta">📍 ${escH(m.location||'—')} · 📅 ${fdate(m.date_found)}</div>
+            <div class="ic-desc">${escH(m.description||'—')}</div>
+          </div>
+          <div class="ms">${(m._score*100).toFixed(0)}%</div>
+        </div>
+        ${m._reasons&&m._reasons.length?`<div class="mr"><ul>${m._reasons.map(r=>`<li>${escH(r)}</li>`).join('')}</ul></div>`:''}
+      </div>`).join('')}`;
+  }catch(e){el.innerHTML=`<div class="alert a-err">${e.message}</div>`;}
+}
+
+// ── admin ────────────────────────────────────────────────────────────────────
+async function loadAdmStats(){
+  try{
+    const d=await api('GET','/admin/analytics');
+    document.getElementById('admStats').innerHTML=`
+      <div class="stat-card"><div class="num">${d.total_lost}</div><div class="lbl">Total Lost</div></div>
+      <div class="stat-card"><div class="num">${d.total_found}</div><div class="lbl">Total Found</div></div>
+      <div class="stat-card"><div class="num">${d.resolved_cases}</div><div class="lbl">Resolved</div></div>
+      <div class="stat-card"><div class="num">${d.active_cases}</div><div class="lbl">Active</div></div>
+      <div class="stat-card"><div class="num">${d.pending_queries}</div><div class="lbl">Pending Queries</div></div>`;
+    loadAdmLost();
+  }catch{}
+}
+
+function aTab(tab,btn){
+  document.querySelectorAll('#view-admin .tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  if(tab==='lost') loadAdmLost();
+  else if(tab==='found') loadAdmFound();
+  else if(tab==='queries') loadAdmQueries();
+  else loadAdmUsers();
+}
+
+async function loadAdmLost(){
+  const el=document.getElementById('admOut');
+  el.innerHTML='<div class="loading"><span class="sp"></span>Loading…</div>';
+  try{
+    const items=await api('GET','/admin/items/lost');
+    if(!items.length){el.innerHTML='<div class="empty">No reports.</div>';return;}
+    el.innerHTML=items.map(i=>`<div class="card" style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;flex-wrap:wrap">
+      <div style="flex:1;min-width:200px">
+        <h3>${escH(i.name)}</h3>
+        <div class="ic-meta">📍 ${escH(i.location||'—')} · 👤 User #${i.user_id} · ${badge(i.status)}</div>
+        <div class="ic-desc">${escH(i.description||'—')}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:.4rem">
+        <select id="sl-${i.id}" style="width:145px;font-size:.8rem;padding:6px">
+          ${['active','approved','rejected','returned','closed'].map(s=>`<option ${i.status===s?'selected':''}>${s}</option>`).join('')}
+        </select>
+        <button class="btn btn-p btn-sm" onclick="updStatus('lost',${i.id})">Update</button>
+      </div>
+    </div>`).join('');
+  }catch(e){el.innerHTML=`<div class="alert a-err">${e.message}</div>`;}
+}
+
+async function loadAdmFound(){
+  const el=document.getElementById('admOut');
+  el.innerHTML='<div class="loading"><span class="sp"></span>Loading…</div>';
+  try{
+    const items=await api('GET','/admin/items/found');
+    if(!items.length){el.innerHTML='<div class="empty">No reports.</div>';return;}
+    el.innerHTML=items.map(i=>`<div class="card" style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;flex-wrap:wrap">
+      <div style="flex:1;min-width:200px">
+        <h3>${escH(i.name)}</h3>
+        <div class="ic-meta">📍 ${escH(i.location||'—')} · 👤 User #${i.user_id} · ${badge(i.status)}</div>
+        <div class="ic-desc">${escH(i.description||'—')}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:.4rem">
+        <select id="sf-${i.id}" style="width:145px;font-size:.8rem;padding:6px">
+          ${['active','approved','rejected','returned','closed'].map(s=>`<option ${i.status===s?'selected':''}>${s}</option>`).join('')}
+        </select>
+        <button class="btn btn-p btn-sm" onclick="updStatus('found',${i.id})">Update</button>
+      </div>
+    </div>`).join('');
+  }catch(e){el.innerHTML=`<div class="alert a-err">${e.message}</div>`;}
+}
+
+async function updStatus(type,id){
+  const status=document.getElementById(`s${type[0]}-${id}`).value;
+  try{
+    await api('PUT','/admin/update-status',{item_type:type,item_id:id,status});
+    alert('✅ Status updated!');
+  }catch(e){alert('Error: '+e.message);}
+}
+
+async function loadAdmQueries(){
+  const el=document.getElementById('admOut');
+  el.innerHTML='<div class="loading"><span class="sp"></span>Loading…</div>';
+  try{
+    const qs=await api('GET','/admin/queries');
+    if(!qs.length){el.innerHTML='<div class="empty">No queries.</div>';return;}
+    el.innerHTML=qs.map(q=>`<div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.6rem">
+        <h3>Query #${q.id} — Item #${q.item_id} — User #${q.user_id}</h3>${badge(q.status)}
+      </div>
+      <p style="font-size:.875rem;margin-bottom:.6rem">${escH(q.message)}</p>
+      ${q.admin_response?`<div class="alert a-info" style="margin-bottom:.7rem"><strong>Previous:</strong> ${escH(q.admin_response)}</div>`:''}
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">
+        <input id="qr-${q.id}" placeholder="Type response…" style="flex:1;min-width:180px"/>
+        <select id="qs-${q.id}" style="width:135px;font-size:.8rem;padding:6px">
+          <option value="pending" ${q.status==='pending'?'selected':''}>Pending</option>
+          <option value="in_progress" ${q.status==='in_progress'?'selected':''}>In Progress</option>
+          <option value="resolved" ${q.status==='resolved'?'selected':''}>Resolved</option>
+        </select>
+        <button class="btn btn-p btn-sm" onclick="sendResp(${q.id})">Send</button>
+      </div>
+    </div>`).join('');
+  }catch(e){el.innerHTML=`<div class="alert a-err">${e.message}</div>`;}
+}
+
+async function sendResp(id){
+  const resp=document.getElementById(`qr-${id}`).value.trim();
+  const status=document.getElementById(`qs-${id}`).value;
+  if(!resp){alert('Please type a response.');return;}
+  try{
+    await api('POST','/admin/respond-query',{query_id:id,response:resp,status});
+    alert('✅ Response sent!'); loadAdmQueries();
+  }catch(e){alert('Error: '+e.message);}
+}
+
+async function loadAdmUsers(){
+  const el=document.getElementById('admOut');
+  el.innerHTML='<div class="loading"><span class="sp"></span>Loading…</div>';
+  try{
+    const users=await api('GET','/admin/users');
+    el.innerHTML=`<div class="grid">${users.map(u=>`<div class="card">
+      <h3>${escH(u.name)}</h3>
+      <div class="ic-meta">${escH(u.email)}</div>
+      <div style="margin-top:.4rem">${badge(u.role)}</div>
+    </div>`).join('')}</div>`;
+  }catch(e){el.innerHTML=`<div class="alert a-err">${e.message}</div>`;}
+}
+
+// ── helpers ──────────────────────────────────────────────────────────────────
+function escH(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// ── init ─────────────────────────────────────────────────────────────────────
+buildNav();
+loadHomeStats();
+</script>
+</body>
+</html>
