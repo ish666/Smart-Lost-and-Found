@@ -2,15 +2,15 @@ pipeline {
     agent any
 
     stages {
-        stage('Build') {
+        stage('Install Dependencies') {
             steps {
-                echo 'Building project...'
+                sh 'pip3 install flask'
             }
         }
 
-        stage('Test') {
+        stage('Run Server') {
             steps {
-                echo 'Testing project...'
+                sh 'python3 server.py'
             }
         }
     }
