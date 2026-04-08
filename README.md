@@ -132,3 +132,5 @@ Returns matches sorted by score (0–100%) with human-readable reasons.
 | 4 | Query/ticket system |
 | 5 | Smart matching algorithm |
 | 6 | Frontend UI + testing |
+
+create a uploads folder after pulling the repository to save the uploaded database
