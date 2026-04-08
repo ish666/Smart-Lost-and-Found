@@ -322,7 +322,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
         # Static frontend
         if p == "" or p == "/":
-            return self._serve_file("frontend/index.html")
+            return self._serve_file("index.html")
         if p.startswith("/uploads/"):
             return self._serve_file(p.lstrip("/"))
         if p.startswith("/frontend/"):
