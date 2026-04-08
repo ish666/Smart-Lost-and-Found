@@ -24,7 +24,7 @@ from datetime import datetime, timezone
 
 # ─── CONFIG ──────────────────────────────────────────────────────────────────
 HOST        = "0.0.0.0"
-PORT        = 8000
+PORT = int(os.environ.get("PORT", 10000))
 SECRET_KEY  = "change-this-secret-in-production"
 TOKEN_TTL   = 3600          # seconds (1 hour)
 DB_PATH     = "lostfound.db"
